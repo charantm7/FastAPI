@@ -1,2 +1,2 @@
 fastapi[all]
-psycopg[binary]
+psycopg2
