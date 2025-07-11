@@ -1,3 +1,4 @@
+import email
 from fastapi import FastAPI, Response, status, Depends
 from typing import Optional, List
 from fastapi.exceptions import HTTPException
@@ -76,5 +77,23 @@ def update_post(post:schema.Post, id:int, db:Session = Depends(get_db)):
     db.commit()
 
     return post_query.first()
+
+@app.post('/users', status_code=status.HTTP_201_CREATED, response_model=schema.User_response)
+def create_user(user: schema.CreateUser, db: Session = Depends(get_db)):
+
+    existing_user = db.query(models.User).filter(models.User.email == user.email).first()
+    
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Email {user.email} already exists"
+        )
+
+    new_user = models.User(**user.dict())
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return new_user
 
 
