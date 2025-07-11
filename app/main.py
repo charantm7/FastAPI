@@ -1,14 +1,7 @@
-from multiprocessing import synchronize
 from fastapi import FastAPI, Response, status, Depends
-from fastapi.params import Body
-from httpx import delete
-from pydantic import BaseModel
-from typing import Optional
-from random import randrange
+from typing import Optional, List
 from fastapi.exceptions import HTTPException
-import psycopg2
-from psycopg2.extras import RealDictCursor
-from . import models
+from . import models, schema
 from .settings import engine, get_db
 from sqlalchemy.orm import Session
 
@@ -17,22 +10,20 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-class Post(BaseModel):
-    title: str
-    content: str
+# CRUD Operation
 
 @app.get('/')
 def root():
     return {'Message':'Welcome Abroad'}
 
-@app.get('/posts')
+@app.get('/posts', response_model=List[schema.Postesponse])
 def get_posts(db: Session = Depends(get_db)):
     post = db.query(models.Post).all()
     
-    return {'message':post}
+    return post
 
-@app.post('/posts')
-def create_post( post: Post, db: Session = Depends(get_db)):
+@app.post('/posts', response_model=schema.Postesponse)
+def create_post( post: schema.Post, db: Session = Depends(get_db)):
 
     new_post = models.Post(**post.dict())
     db.add(new_post)
@@ -42,11 +33,17 @@ def create_post( post: Post, db: Session = Depends(get_db)):
     return new_post
 
 
-@app.get('/posts/{id}')
+@app.get('/posts/{id}', response_model=schema.Postesponse)
 def get_single_post(id: int, db: Session = Depends(get_db)):
-    post = db.query(models.Post).filter(models.Post.id == id).first()
+    post_query = db.query(models.Post).filter(models.Post.id == id)
 
+    post = post_query.first()
+
+    if not post:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Post with ID - {id} not found!')
+    
     return post
+
 
 @app.delete('/posts/{id}')
 def delete_posts(id: int, db: Session = Depends(get_db)):
@@ -66,8 +63,8 @@ def delete_posts(id: int, db: Session = Depends(get_db)):
 
 
 
-@app.put('/posts/{id}')
-def update_post(post:Post, id:int, db:Session = Depends(get_db)):
+@app.put('/posts/{id}', response_model=schema.Postesponse)
+def update_post(post:schema.Post, id:int, db:Session = Depends(get_db)):
 
     post_query = db.query(models.Post).filter(models.Post.id == id)
     get_post = post_query.first()
@@ -78,6 +75,6 @@ def update_post(post:Post, id:int, db:Session = Depends(get_db)):
     post_query.update(post.dict(), synchronize_session=False)
     db.commit()
 
-    return {'updated': post_query.first()}
+    return post_query.first()
 
 
