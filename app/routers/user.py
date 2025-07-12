@@ -1,17 +1,17 @@
 
-from email.policy import HTTP
-import stat
 from fastapi import status, Depends, APIRouter
 from fastapi.exceptions import HTTPException
-from httpx import get
 from sqlalchemy.orm import Session
 from .. import schema, models, utils
 from ..settings import get_db
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/users",
+    tags=['Users']
+)
 
 
-@router.post('/users', status_code=status.HTTP_201_CREATED, response_model=schema.User_response)
+@router.post('/', status_code=status.HTTP_201_CREATED, response_model=schema.User_response)
 def create_user(user: schema.CreateUser, db: Session = Depends(get_db)):
 
     existing_user = db.query(models.User).filter(models.User.email == user.email).first()
@@ -30,7 +30,7 @@ def create_user(user: schema.CreateUser, db: Session = Depends(get_db)):
 
     return new_user
 
-@router.get('/users/{id}', response_model=schema.User_response)
+@router.get('/{id}', response_model=schema.User_response)
 def get_user(id: int, db:Session = Depends(get_db)):
 
     user = db.query(models.User).filter(models.User.id == id).first()
@@ -39,7 +39,7 @@ def get_user(id: int, db:Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User with ID - {id} doesn't exists!")
     return user
 
-@router.delete('/users/{id}')
+@router.delete('/{id}')
 def delete_user(id:int, db: Session = Depends(get_db)):
 
     user_query = db.query(models.User).filter(models.User.id == id)

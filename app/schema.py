@@ -11,15 +11,22 @@ class Post(BasePost):
 class Postesponse(BasePost):
     public: bool
     class Config:
-        orm_mode = True
+        from_attributes = True
 
-class CreateUser(BaseModel):
+class User(BaseModel):
     email: EmailStr
     password: str
+
+
+class CreateUser(User):
+    pass
 
 class User_response(BaseModel):
     id: int
     email: EmailStr
     created_at: datetime
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+class User_login(User):
+    pass

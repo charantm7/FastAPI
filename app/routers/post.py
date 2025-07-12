@@ -5,15 +5,18 @@ from sqlalchemy.orm import Session
 from .. import schema, models
 from ..settings import get_db
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/posts",
+    tags=['Posts']
+)
 
-@router.get('/posts', response_model=List[schema.Postesponse])
+@router.get('/', response_model=List[schema.Postesponse])
 def get_posts(db: Session = Depends(get_db)):
     post = db.query(models.Post).all()
     
     return post
 
-@router.post('/posts', response_model=schema.Postesponse)
+@router.post('/', response_model=schema.Postesponse)
 def create_post( post: schema.Post, db: Session = Depends(get_db)):
 
     new_post = models.Post(**post.dict())
@@ -24,7 +27,7 @@ def create_post( post: schema.Post, db: Session = Depends(get_db)):
     return new_post
 
 
-@router.get('/posts/{id}', response_model=schema.Postesponse)
+@router.get('/{id}', response_model=schema.Postesponse)
 def get_single_post(id: int, db: Session = Depends(get_db)):
     post_query = db.query(models.Post).filter(models.Post.id == id)
 
@@ -36,7 +39,7 @@ def get_single_post(id: int, db: Session = Depends(get_db)):
     return post
 
 
-@router.delete('/posts/{id}')
+@router.delete('/{id}')
 def delete_posts(id: int, db: Session = Depends(get_db)):
 
     post_query = db.query(models.Post).filter(models.Post.id == id)
@@ -54,7 +57,7 @@ def delete_posts(id: int, db: Session = Depends(get_db)):
 
 
 
-@router.put('/posts/{id}', response_model=schema.Postesponse)
+@router.put('/{id}', response_model=schema.Postesponse)
 def update_post(post:schema.Post, id:int, db:Session = Depends(get_db)):
 
     post_query = db.query(models.Post).filter(models.Post.id == id)
