@@ -30,3 +30,10 @@ class User_response(BaseModel):
 
 class User_login(User):
     pass
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+class TokenID(BaseModel):
+    id: int
+
