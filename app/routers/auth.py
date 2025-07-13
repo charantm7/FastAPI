@@ -12,10 +12,10 @@ def login(credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depe
     user = db.query(models.User).filter(models.User.email == credentials.username).first()
 
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Invalid credentials")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Invalid credentials")
 
     if not utils.verify(credentials.password, user.password):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Invalid Credentials')
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Invalid Credentials')
     
     # create jwt access token
     jwt_access_token = Oauth2.create_access_token({'user_id':user.id})

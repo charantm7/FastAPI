@@ -1,7 +1,5 @@
 
 import os
-from typing import Annotated
-from httpx import get
 from jose import JWTError, jwt
 from datetime import datetime , timedelta, timezone
 from dotenv import load_dotenv
@@ -29,7 +27,7 @@ def create_access_token(data: dict):
 
     # get the data from the user to encode
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=30)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=30)
     to_encode.update({'exp':expire}) #update the data with the expire time
 
     # create toke by adding the data, secrete key, algorithm
@@ -59,7 +57,7 @@ def validate_access_token(token: str):
 
 def get_current_user(token: str = Depends(Oauth2_schema), db: Session = Depends(get_db)):
 
-    valid_token = validate_access_token(token)
+    valid_token = validate_access_token(token)  
 
     user = db.query(models.User).filter(models.User.id == valid_token.id).first()
 
