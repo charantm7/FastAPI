@@ -26,7 +26,6 @@ def get_posts(db: Session = Depends(get_db), limit: int = 10, search: str = ""):
                 .filter(models.Post.title.contains(search), models.Post.public == True)\
                     .limit(limit).all()
 
-    print(vote)
 
     result = []
     
@@ -40,12 +39,25 @@ def get_posts(db: Session = Depends(get_db), limit: int = 10, search: str = ""):
     return result
 
 # get the posts of current users
-@router.get('/my/', response_model=List[schema.Postesponse])
+@router.get('/my/', response_model=List[schema.PostOut])
 def get_current_user_post(db: Session = Depends(get_db), current_user: int = Depends(Oauth2.get_current_user)):
     
-    post = db.query(models.Post).filter(models.Post.owner_id == current_user.id).all()
+    vote_subq = db.query(models.Vote.post_id, func.count(models.Vote.post_id).label("likes")).group_by(models.Vote.post_id).subquery()
 
-    return post
+
+    vote = db.query(models.Post, vote_subq.c.likes)\
+    .options(joinedload(models.Post.owner))\
+        .join(vote_subq, models.Post.id == vote_subq.c.post_id, isouter=True)\
+                .filter(models.Post.owner_id == current_user.id).all()
+    
+    result = []
+    for post , likes in vote:
+        post_dict = post.__dict__.copy()
+        post_dict['Likes'] = likes or 0
+        post_dict['owner'] = post.owner.__dict__
+        result.append(post_dict)
+
+    return result
 
 # to create a posts
 @router.post('/', response_model=schema.Postesponse)
@@ -59,22 +71,40 @@ def create_post( post: schema.Post, current_user: int = Depends(Oauth2.get_curre
     return new_post
 
 # to get a single posts
-@router.get('/{id}', response_model=schema.Postesponse)
+@router.get('/{id}', response_model=List[schema.PostOut])
 def get_single_post(id: int, db: Session = Depends(get_db), current_user: int = Depends(Oauth2.get_current_user)):
 
-    post_query = db.query(models.Post).filter(models.Post.id == id)
+    vote_subq = db.query(models.Vote.post_id, func.count(models.Vote.post_id).label("likes")).group_by(models.Vote.post_id).subquery()
 
-    post = post_query.first()
+
+    vote_query = db.query(models.Post, vote_subq.c.likes)\
+    .options(joinedload(models.Post.owner))\
+        .join(vote_subq, models.Post.id == vote_subq.c.post_id, isouter=True)\
+                .filter(models.Post.id == id)
     
-    if not post:
+    vote = vote_query.first()
+    
+    result = []
+    if vote:
+        post , likes = vote
+
+        if post.public != True and post.owner_id != current_user.id:
+
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f'This post with ID - {id} does not exists!')
+    
+        post_dict = post.__dict__.copy()
+        post_dict['Likes'] = likes or 0
+        post_dict['owner'] = post.owner.__dict__
+        result.append(post_dict)
+    else:
+        print(vote)
+
+    
+    if not result:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Post with ID - {id} not found!')
 
-    if post.public != True and post.owner_id != current_user.id:
 
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f'This post with ID - {id} does not exists!')
-
-    
-    return post
+    return result
 
 #  delete the posts
 @router.delete('/{id}')
@@ -107,7 +137,7 @@ def update_post(post:schema.Post, id:int, db:Session = Depends(get_db), current_
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id - {id} not found!")
     
     if get_post.owner_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not Authorized to Delete!")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not Authorized to Update!")
 
     post_query.update(post.dict(), synchronize_session=False)
     db.commit()
