@@ -10,10 +10,18 @@ class Post(BasePost):
     public: bool = True
     pass
 
+class User_response(BaseModel):
+    id: int
+    email: EmailStr
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
 class Postesponse(BasePost):
     id: int
     public: bool
     owner_id: int
+    owner: User_response
     class Config:
         from_attributes = True
 
@@ -24,13 +32,6 @@ class User(BaseModel):
 
 class CreateUser(User):
     pass
-
-class User_response(BaseModel):
-    id: int
-    email: EmailStr
-    created_at: datetime
-    class Config:
-        from_attributes = True
 
 class User_login(User):
     pass

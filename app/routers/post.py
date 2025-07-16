@@ -44,7 +44,7 @@ def get_single_post(id: int, db: Session = Depends(get_db), current_user: int = 
     post_query = db.query(models.Post).filter(models.Post.id == id)
 
     post = post_query.first()
-
+    
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Post with ID - {id} not found!')
 
