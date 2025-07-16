@@ -13,9 +13,9 @@ router = APIRouter(
 
 # get all public posts
 @router.get('/', response_model=List[schema.Postesponse])
-def get_posts(db: Session = Depends(get_db)):
+def get_posts(db: Session = Depends(get_db), limit: int = 10, search: str = ""):
 
-    post = db.query(models.Post).filter(models.Post.public == True).all()
+    post = db.query(models.Post).filter(models.Post.public == True,models.Post.title.contains(search)).limit(limit).all()
     return post
 
 # get the posts of current users
