@@ -1,10 +1,7 @@
-from fastapi import FastAPI, Response, status, Depends
-from typing import Optional, List
-from fastapi.exceptions import HTTPException
-from . import models, schema, utils
-from .settings import engine, get_db
-from sqlalchemy.orm import Session
-from .routers import user, post, auth
+from fastapi import FastAPI
+from . import models
+from .settings import engine
+from .routers import user, post, auth, vote
 
 
 models.Base.metadata.create_all(bind=engine)
@@ -17,6 +14,7 @@ app = FastAPI()
 app.include_router(user.router)
 app.include_router(post.router)
 app.include_router(auth.router)
+app.include_router(vote.router)
 
 @app.get('/')
 def root():

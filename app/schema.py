@@ -1,6 +1,7 @@
 
 from datetime import datetime
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, conint
+from typing import Annotated, Literal
 
 class BasePost(BaseModel):
     title: str
@@ -25,6 +26,15 @@ class Postesponse(BasePost):
     class Config:
         from_attributes = True
 
+class PostOut(BasePost):
+    id: int
+    public: bool
+    owner_id: int
+    owner: User_response
+    Likes: int
+    class Config:
+        from_attributes = True
+
 class User(BaseModel):
     email: EmailStr
     password: str
@@ -42,3 +52,7 @@ class Token(BaseModel):
 class TokenID(BaseModel):
     id: int
 
+
+class Vote(BaseModel):
+    post_id: int
+    dir: Literal[0,1]

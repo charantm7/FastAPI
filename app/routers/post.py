@@ -1,7 +1,8 @@
 from fastapi import status, Depends, APIRouter
 from fastapi.exceptions import HTTPException
 from typing import List
-from sqlalchemy.orm import Session
+from sqlalchemy import func
+from sqlalchemy.orm import Session, joinedload
 from .. import schema, models, Oauth2
 from ..settings import get_db
 
@@ -12,11 +13,31 @@ router = APIRouter(
 
 
 # get all public posts
-@router.get('/', response_model=List[schema.Postesponse])
+@router.get('/', response_model=List[schema.PostOut])
 def get_posts(db: Session = Depends(get_db), limit: int = 10, search: str = ""):
 
-    post = db.query(models.Post).filter(models.Post.public == True,models.Post.title.contains(search)).limit(limit).all()
-    return post
+    # it is the sub query to get the likes with the post id to join with the 
+    vote_subq = db.query(models.Vote.post_id, func.count(models.Vote.post_id).label("likes")).group_by(models.Vote.post_id).subquery()
+
+
+    vote = db.query(models.Post, vote_subq.c.likes)\
+    .options(joinedload(models.Post.owner))\
+        .join(vote_subq, models.Post.id == vote_subq.c.post_id, isouter=True)\
+                .filter(models.Post.title.contains(search), models.Post.public == True)\
+                    .limit(limit).all()
+
+    print(vote)
+
+    result = []
+    
+
+    for post , likes in vote:
+        post_dict = post.__dict__.copy()
+        post_dict['Likes'] = likes or 0
+        post_dict['owner'] = post.owner.__dict__
+        result.append(post_dict)
+
+    return result
 
 # get the posts of current users
 @router.get('/my/', response_model=List[schema.Postesponse])
