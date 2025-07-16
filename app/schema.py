@@ -7,9 +7,13 @@ class BasePost(BaseModel):
     content: str
 
 class Post(BasePost):
+    public: bool = True
     pass
+
 class Postesponse(BasePost):
+    id: int
     public: bool
+    owner_id: int
     class Config:
         from_attributes = True
 
