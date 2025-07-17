@@ -3,3 +3,4 @@ psycopg2
 sqlalchemy
 dotenv
 passlib[bcrypt]
+alembic
